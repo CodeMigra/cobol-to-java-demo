@@ -59,7 +59,7 @@ public class PayrollProcessor {
         try (BufferedReader reader = new BufferedReader(new FileReader(inputPath))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                if (line.length() < 56) continue;
+                if (line.length() < 57) continue;  // minimum length to reach dept field (substring 53-57)
                 Employee emp = parseRecord(line);
                 results.add(calculate(emp));
             }
@@ -70,11 +70,15 @@ public class PayrollProcessor {
 
     private Employee parseRecord(String record) {
         // Fixed-width layout matches original COBOL FD definition
+        // COBOL PIC 9(4)V99 = 6 chars with implied 2 decimal places (e.g. "001500" = 15.00)
+        // COBOL PIC 9(3)V9  = 4 chars with implied 1 decimal place  (e.g. "0400" = 40.0)
         String id         = record.substring(0, 6).trim();
         String lastName   = record.substring(6, 26).trim();
         String firstName  = record.substring(26, 41).trim();
-        BigDecimal rate   = new BigDecimal(record.substring(41, 47).trim().replace(",", ""));
-        BigDecimal hours  = new BigDecimal(record.substring(47, 51).trim());
+        BigDecimal rate   = new BigDecimal(record.substring(41, 47).trim().replace(",", ""))
+                                .movePointLeft(2);   // PIC 9(4)V99 → implied 2 decimal places
+        BigDecimal hours  = new BigDecimal(record.substring(47, 51).trim())
+                                .movePointLeft(1);   // PIC 9(3)V9  → implied 1 decimal place
         String taxCode    = record.substring(51, 53).trim();
         String dept       = record.substring(53, 57).trim();
 
